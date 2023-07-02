@@ -7,43 +7,40 @@ fn main() {
 #[component]
 fn App(cx: Scope) -> impl IntoView {
     let (count, set_count) = create_signal(cx, 0);
+    let (x, set_x) = create_signal(cx, 0);
+    let (y, set_y) = create_signal(cx, 0);
+    let double_count = move || count() * 2;
 
-    let on_click_btn = move |_| {
-        log!("count:{}", &count.get());
-        set_count.update(|count: &mut i32| *count += 1);
+    let mut rng = rand::thread_rng();
+    let update_pos_count = move |_| {
+        set_count.update(|n| *n += 1);
+        set_x.update(|v| *v = rng.gen::<u8>());
+        set_y.update(|v| *v = rng.gen::<u8>());
     };
 
-    view! {cx,
-        <p>
-            <input
-            type="text"
-            prop:value= move || count.get()
-            disabled= move || { count.get() % 2 == 0}
-            />
-        </p>
-        <p>
-            <input
-            type="checkbox"
-            checked= move || { count.get() % 2 == 0}/> "Checkbox"
-        </p>
-        <p>
-            <strong>"Reactive: "</strong>
-            // you can insert Rust expressions as values in the DOM
-            // by wrapping them in curly braces
-            // if you pass in a function, it will reactively update
-            {move || count.get()}
-        </p>
-        <p>
-            <strong>"Reactive shorthand: "</strong>
-            // signals are functions, so we can remove the wrapping closure
-            {count}
-        </p>
-        <p>
-            <strong>"Not reactive: "</strong>
-            // NOTE: if you write {count()}, this will *not* be reactive
-            // it simply gets the value of count once
-            {count()}
-        </p>
-        <button on:click = on_click_btn>"ClickMe"</button>
+    view! { cx,
+        <button
+            on:click=update_pos_count
+            // class:red=move || count() % 2 == 1
+            class=("red", move || count() % 2 == 1)
+        >
+            "Click me: "
+            {move || count}
+            " - "
+            {move || x}
+            " - "
+            {move || y}
+        </button><br/>
+        <progress max="100" value=count />"  "{move || if count.get() >= 100 {100}else{count.get()}}" %"<br/>
+        <progress max="100" value=double_count />"  "{move || if double_count() >= 100 {100} else {double_count()}}" %" <br/>
+
+        <div
+            style="position: absolute"
+            style:left=move || format!("{}px", x() + 10)
+            style:top=move || format!("{}px", y() + 100)
+            style:background-color=move || format!("rgb({:?}, {:?}, 100)", {x()}, {y()})
+        >
+            "Moves when coordinates change"
+        </div>
     }
 }
