@@ -1,15 +1,2 @@
-cargo install --locked trunk	(version 0.17.1)
-cargo install --locked wasm-bindgen-cli  (version 0.2.87)
-cargo install --locked cargo-leptos (version 0.1.11)
-
-rustup toolchain install nightly
-rustup default nightly
-rustup target add wasm32-unknown-unknown
-
-rustup target list --installed
-rustup toolchain list
-
-if any issues,
-do 
-cargo update
-rustup update nightly
+# leptos-tutorial
+leptos-tutorial
