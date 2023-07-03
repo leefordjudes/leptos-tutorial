@@ -14,8 +14,10 @@ fn App(cx: Scope) -> impl IntoView {
 
     view! { cx,
         <button on:click=update_count>"Click me: "</button><br/>
-        <ProgressBarWithProps min=50 progress=count /><br/>
-        <ProgressBarWithGeneric progress=double_count /><br/>
+        <ProgressBarWithProps min=50 progress=count />"  "{move || if count.get() + (50 as i32) >= 100 {100}else{count.get() + (50 as i32)}}" %"<br/>
+        <ProgressBarWithProps max=50 progress=count />"  "{move || if count.get() >= 100 {100}else{count.get()}}" %"<br/>
+        <ProgressBarWithGeneric progress=double_count />"  "{move || if double_count() >= 100 {100} else {double_count()}}" %" <br/>
+        <ProgressBarWithIntoProps max=50 progress=Signal::derive(cx, double_count) />"  "{move || if double_count() >= 50 {50} else {double_count()}}" %" <br/>
     }
 }
 
@@ -46,17 +48,14 @@ where
     }
 }
 
-// #[component]
-// fn ProgressBarWithIntoProps(
-//     cx: Scope,
-//     #[prop(optional)] min: u16,
-//     #[prop(default = 100)] max: u16,
-//     progress: F,
-// ) -> impl IntoView
-// where
-//     F: Fn() -> i32 + 'static,
-// {
-//     view! {cx,
-//         <progress min=min max=max value=progress/>
-//     }
-// }
+#[component]
+fn ProgressBarWithIntoProps(
+    cx: Scope,
+    #[prop(optional)] min: u16,
+    #[prop(default = 100)] max: u16,
+    #[prop(into)] progress: Signal<i32>,
+) -> impl IntoView {
+    view! {cx,
+        <progress min=min max=max value=progress/>
+    }
+}
