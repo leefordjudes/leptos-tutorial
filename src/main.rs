@@ -1,4 +1,35 @@
 use leptos::*;
+use nanoid::nanoid;
+use rand::Rng;
+
+static ALPHABET: [char; 36] = [
+    '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i',
+    'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
+];
+static HEX: [char; 16] = [
+    '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', 'a', 'b', 'c', 'd', 'e', 'f',
+];
+static CHAR_NUMBER: [char; 10] = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'];
+static HEX_ALPHABET: [char; 6] = ['a', 'b', 'c', 'd', 'e', 'f'];
+
+fn get_refno() -> String {
+    let refno = nanoid!(5, &ALPHABET);
+    log!("refno: {:?}", refno);
+    refno
+}
+fn get_oid() -> String {
+    let oid_num = nanoid!(2, &CHAR_NUMBER);
+    let oid_hex = nanoid!(14, &HEX);
+    let oid = format!("{}{}", oid_num, oid_hex);
+    log!("oid: {:?}", oid);
+    oid
+}
+fn get_closing() -> f64 {
+    let closing = rand::thread_rng().gen_range(100..1000);
+    log!("closing: {:?}", closing as f64);
+    closing as f64
+}
+
 fn main() {
     mount_to_body(|cx| view! { cx,  <App/> })
 }
@@ -34,6 +65,10 @@ fn App(cx: Scope) -> impl IntoView {
         <h2>"Dynamic views:"</h2>
         <h3>"IterateCountersUsingFor"</h3>
         <IterateCountersUsingFor length=3/>
+        <h3>"IterateDynamicCountersUsingFor"</h3>
+        <IterateDynamicCountersUsingFor initial_length=3/>
+        <h3>"Array of records"</h3>
+        <IterateDynamicItemsUsingFor initial_length=5/>
     }
 }
 
@@ -158,4 +193,144 @@ fn IterateCountersUsingFor(cx: Scope, length: u8) -> impl IntoView {
         </ul>
       </div>
     }
+}
+#[component]
+fn IterateDynamicCountersUsingFor(cx: Scope, initial_length: u8) -> impl IntoView {
+    let mut next_counter_id = initial_length;
+
+    let initial_counters = (0..initial_length)
+        .map(|id| (id, create_signal(cx, id + 1)))
+        .collect::<Vec<_>>();
+
+    let (counters, set_counters) = create_signal(cx, initial_counters);
+
+    let add_counter = move |_| {
+        let sig = create_signal(cx, next_counter_id + 1);
+        set_counters.update(move |counters| counters.push((next_counter_id, sig)));
+        next_counter_id += 1;
+    };
+
+    log!("Dynamic views: IterateDynamicCountersUsingFor");
+
+    view! {
+      cx,
+      <div>
+      <button on:click=add_counter>"Add Counter"</button>
+      <ul style="list-style-type:none;">
+        <For
+          each=counters
+          key=|counter| counter.0
+          view=move |cx, (id, (count, set_count))| {
+            let update_count = move |_| set_count.update(|n| *n += 1);
+            let update_counters = move |_| {
+                set_counters.update(|counters| {
+                    counters.retain(|(counter_id, _)| counter_id != &id)
+                });
+            };
+            view! {
+              cx,
+              <li style="margin-bottom:5px">
+                <button on:click=update_count>{count}</button>
+                <button on:click=update_counters>"Remove"</button>
+              </li>
+            }
+          }
+        />
+        </ul>
+      </div>
+    }
+}
+
+#[derive(Clone, Debug)]
+struct Item {
+    pending: String,
+    refno: String,
+    closing: f64,
+    amount: f64,
+}
+
+impl Item {
+    fn default() -> Self {
+        Self {
+            pending: get_oid(),
+            refno: get_refno(),
+            closing: get_closing(),
+            amount: 0.0,
+        }
+    }
+}
+
+#[derive(Clone, Debug)]
+struct GroupItem {
+    pending: String,
+    item: RwSignal<Item>,
+}
+#[component]
+fn IterateDynamicItemsUsingFor(cx: Scope, initial_length: u8) -> impl IntoView {
+    let default_items = (0..initial_length)
+        .map(|_| Item::default())
+        .collect::<Vec<_>>();
+
+    // let initial_items = default_items
+    //     .iter()
+    //     .map(|item| (item.pending, create_signal(cx, item)))
+    //     .collect::<Vec<_>>();
+
+    // let (items, set_items) = create_signal(cx, initial_items);
+
+    // let add_item = move |_| {
+    //     let i = Item::default();
+    //     let sig = create_signal(cx, i.clone());
+    //     set_items.update(move |items| items.push((i.pending, sig)));
+    // };
+
+    log!("Dynamic views: IterateDynamicItemsUsingFor");
+
+    view! {
+        cx,
+        <div>
+        <p>"item list"</p>
+        <ul>
+            <li>
+                <span>"pending"</span>" - "
+                <span>"refno"</span>" - "
+                <span>"closing"</span>" - "
+                <span>"amount"</span>
+            </li>
+
+        {
+          default_items
+            .into_iter()
+            .map(|v|{
+
+                view! {cx,
+                <li>
+                    <span>{v.pending.to_owned()}</span>" - "
+                    <span>{v.refno.to_owned()}</span>" - "
+                    <span>{v.closing.to_owned()}</span>" - "
+                    <input prop:value={v.amount.to_owned()}></input>
+                </li>
+                }
+            })
+            .collect::<Vec<_>>()
+        }
+    </ul>
+      //   <button on:click=add_item>"Add Item"</button>
+      //   <ul style="list-style-type:none;">
+      //     <For
+      //       each=items
+      //       key=|item| item.0
+      //       view=move |cx, (id, (item, set_item))| {
+      //         view! {
+      //           cx,
+      //           <li style="margin-bottom:5px">
+      //             <button on:click=update_count>{count}</button>
+      //             <button on:click=update_counters>"Remove Item"</button>
+      //           </li>
+      //         }
+      //       }
+      //     />
+      //     </ul>
+        </div>
+      }
 }
