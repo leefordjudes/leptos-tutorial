@@ -1,4 +1,4 @@
-use leptos::*;
+use leptos::{ev::Event, *};
 use nanoid::nanoid;
 use rand::Rng;
 
@@ -271,12 +271,12 @@ fn IterateDynamicItemsUsingFor(cx: Scope, initial_length: u8) -> impl IntoView {
         .map(|_| Item::default())
         .collect::<Vec<_>>();
 
-    // let initial_items = default_items
-    //     .iter()
-    //     .map(|item| (item.pending, create_signal(cx, item)))
-    //     .collect::<Vec<_>>();
+    let initial_items = default_items
+        .into_iter()
+        .map(|item| (item.pending.clone(), create_signal(cx, item)))
+        .collect::<Vec<_>>();
 
-    // let (items, set_items) = create_signal(cx, initial_items);
+    let (items, set_items) = create_signal(cx, initial_items);
 
     // let add_item = move |_| {
     //     let i = Item::default();
@@ -284,53 +284,96 @@ fn IterateDynamicItemsUsingFor(cx: Scope, initial_length: u8) -> impl IntoView {
     //     set_items.update(move |items| items.push((i.pending, sig)));
     // };
 
+    let add_item = move |_| {};
+
     log!("Dynamic views: IterateDynamicItemsUsingFor");
 
+    let set_amount = move |pending, value| {
+        log!("pending: {:?}, value: {:?}", pending, value);
+        // let items = items.get();
+        // if let Some(itm) = items.into_iter().find(|x| x.0 == pending) {
+        //     let (get, set) = itm.1;
+        //     let v = value.parse::<f64>().unwrap_or_default();
+        //     set.update(|i| *i.amount = v);
+        // }
+    };
+
     view! {
-        cx,
-        <div>
-        <p>"item list"</p>
-        <ul>
-            <li>
-                <span>"pending"</span>" - "
-                <span>"refno"</span>" - "
-                <span>"closing"</span>" - "
-                <span>"amount"</span>
-            </li>
+      cx,
+      <div>
+      <p>"item list"</p>
+      <button on:click=add_item>"Add Item"</button>
+      <table width="30%">
+          <tr>
+              <th width="40%">"pending"</th>
+              <th width="20%">"refno"</th>
+              <th width="20%">"closing"</th>
+              <th width="20%">"amount"</th>
+          </tr>
 
-        {
-          default_items
-            .into_iter()
-            .map(|v|{
+    //   {
+    //     default_items
+    //       .into_iter()
+    //       .map(|v|{
+    //           view! {cx,
+    //           <tr>
+    //               <td width="40%">{v.pending.to_owned()}</td>
+    //               <td width="20%">{v.refno.to_owned()}</td>
+    //               <td width="20%">{v.closing.to_owned()}</td>
+    //               <td width="20%"><input type="number" prop:value={v.amount.to_owned()}/></td>
+    //           </tr>
+    //           }
+    //       })
+    //       .collect::<Vec<_>>()
+    //   }
+        <For
+          each=items
+          key=|item| item.0.clone()
+          view=move |cx, (id, (item, set_item))| {
+            let itm = item.get();
+            view! {
+              cx,
+              <tr>
+                <td width="40%">{itm.pending.clone()}</td>
+                <td width="20%">{itm.refno.clone()}</td>
+                <td width="20%">{itm.closing}</td>
+                <td width="20%"><input type="number" prop:value={itm.amount} on:input=move |ev| {
+                    let id=itm.pending.clone();
+                    set_amount(id, event_target_value(&ev));
+                }/></td>
+              </tr>
+            }
+          }
+        />
 
-                view! {cx,
-                <li>
-                    <span>{v.pending.to_owned()}</span>" - "
-                    <span>{v.refno.to_owned()}</span>" - "
-                    <span>{v.closing.to_owned()}</span>" - "
-                    <input prop:value={v.amount.to_owned()}></input>
-                </li>
-                }
-            })
-            .collect::<Vec<_>>()
-        }
-    </ul>
-      //   <button on:click=add_item>"Add Item"</button>
-      //   <ul style="list-style-type:none;">
-      //     <For
-      //       each=items
-      //       key=|item| item.0
-      //       view=move |cx, (id, (item, set_item))| {
-      //         view! {
-      //           cx,
-      //           <li style="margin-bottom:5px">
-      //             <button on:click=update_count>{count}</button>
-      //             <button on:click=update_counters>"Remove Item"</button>
-      //           </li>
-      //         }
-      //       }
-      //     />
-      //     </ul>
-        </div>
-      }
+      </table>
+
+    //   <table width="30%">
+    //       <tr>
+    //           <th width="40%">"pending"</th>
+    //           <th width="20%">"refno"</th>
+    //           <th width="20%">"closing"</th>
+    //           <th width="20%">"amount"</th>
+    //       </tr>
+    //   <For
+    //     each=move || items.get()
+    //     key=|item| item.0
+    //     view=move |cx, (id, (item, set_item))| {
+    //         let itm = item.get();
+    //       view! {
+    //         cx,
+    //         <tr>
+    //             <td width="40%">{itm.pending.clone()}</td>
+    //             <td width="20%">{itm.refno.clone()}</td>
+    //             <td width="20%">{itm.closing}</td>
+    //             <td width="20%">{itm.amount}</td>
+    //         </tr>
+    //       }
+    //     }
+    //   />
+    //   </table>
+
+
+      </div>
+    }
 }
