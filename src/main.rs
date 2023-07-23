@@ -7,12 +7,38 @@ fn main() {
 #[component]
 fn App(cx: Scope) -> impl IntoView {
     view! { cx,
+        {control_flow(cx)}
         <h2>"OverRendering"</h2>
         <OverRendering/>
         <h2>"RenderWithShow"</h2>
         <RenderWithShow/>
         <h2>"TypeConversion"</h2>
         <TypeConversion/>
+    }
+}
+
+fn control_flow(cx: Scope) -> impl IntoView {
+    let (value, set_value) = create_signal(cx, 0);
+    let is_odd = move || value() & 1 == 1;
+    let odd_text = move || if is_odd() { Some("How odd!") } else { None };
+    let upd_fn = move |_| set_value.update(|n| *n += 1);
+    view! { cx,
+        <h2>"ControlFlow"</h2>
+        <button on:click=upd_fn>"+1"</button>
+        <p>"Value is: " {value}</p>
+        <hr/>
+        <h2>"Option<T>"</h2>
+        <p>{odd_text}</p>
+        <p>{move || odd_text().map(|text| text.len())}</p>
+        <h2>"Conditional Logic"</h2>
+        <p>
+            {move || if is_odd() {
+                "Odd"
+            } else {
+                "Even"
+            }}
+        </p>
+        <p class:hidden=is_odd>"Appears if even."</p>
     }
 }
 
@@ -32,7 +58,7 @@ fn OverRendering(cx: Scope) -> impl IntoView {
     };
 
     view! { cx,
-        <button on:click=move |_| set_value.update(|n| *n = *n + 1)>"Click Me"</button>
+        <button on:click=move |_| set_value.update(|n| *n += 1)>"Click Me"</button>
         // <p>{message}</p>
         {message}
     }
