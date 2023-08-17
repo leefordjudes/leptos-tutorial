@@ -17,6 +17,15 @@ fn App(cx: Scope) -> impl IntoView {
         set_x.update(|v| *v = rng.gen::<u8>());
         set_y.update(|v| *v = rng.gen::<u8>());
     };
+    let xpos = move || x.get();
+    let ypos = move || y.get();
+    let div_inner_html = move || {
+        format!(
+            "<p>Moves when coordinates({},{}) change</p>",
+            xpos(),
+            ypos()
+        )
+    };
 
     view! { cx,
         <button
@@ -39,8 +48,14 @@ fn App(cx: Scope) -> impl IntoView {
             style:left=move || format!("{}px", x() + 10)
             style:top=move || format!("{}px", y() + 100)
             style:background-color=move || format!("rgb({:?}, {:?}, 100)", {x()}, {y()})
-        >
-            "Moves when coordinates change"
-        </div>
+            inner_html=div_inner_html
+        />
+        // <div
+        //     style="position: absolute"
+        //     style:left=move || format!("{}px", x() + 10)
+        //     style:top=move || format!("{}px", y() + 100)
+        //     style:background-color=move || format!("rgb({:?}, {:?}, 100)", {x()}, {y()})
+        // >"Moves when coordinates change"</div>
+        // <div inner_html=div_inner_html />
     }
 }
