@@ -1,134 +1,39 @@
-use leptos::{ev::MouseEvent, *};
-
-// This highlights four different ways that child components can communicate
-// with their parent:
-// 1) <ButtonA/>: passing a WriteSignal as one of the child component props,
-//    for the child component to write into and the parent to read
-// 2) <ButtonB/>: passing a closure as one of the child component props, for
-//    the child component to call
-// 3) <ButtonC/>: adding an `on:` event listener to a component
-// 4) <ButtonD/>: providing a context that is used in the component (rather than prop drilling)
-
-#[derive(Copy, Clone)]
-struct SmallcapsContext(WriteSignal<bool>);
+use leptos::*;
 
 #[component]
 pub fn App(cx: Scope) -> impl IntoView {
-    // just some signals to toggle three classes on our <p>
-    let (red, set_red) = create_signal(cx, false);
-    let (right, set_right) = create_signal(cx, false);
-    let (italics, set_italics) = create_signal(cx, false);
-    let (smallcaps, set_smallcaps) = create_signal(cx, false);
-
-    // the newtype pattern isn't *necessary* here but is a good practice
-    // it avoids confusion with other possible future `WriteSignal<bool>` contexts
-    // and makes it easier to refer to it in ButtonC
-    provide_context(cx, SmallcapsContext(set_smallcaps));
-
-    view! {
-        cx,
-        <main>
-            <p
-                // class: attributes take F: Fn() => bool, and these signals all implement Fn()
-                class:red=red
-                class:right=right
-                class:italics=italics
-                class:smallcaps=smallcaps
-            >
-                "Lorem ipsum sit dolor amet."
-            </p>
-
-            // Button A: pass the signal setter
-            <ButtonA setter=set_red/>
-
-            // Button B: pass a closure
-            <ButtonB on_click=move |_| set_right.update(|value| *value = !*value)/>
-
-            // Button B: use a regular event listener
-            // setting an event listener on a component like this applies it
-            // to each of the top-level elements the component returns
-            <ButtonC on:click=move |_| set_italics.update(|value| *value = !*value)/>
-
-            // Button D gets its setter from context rather than props
-            <ButtonD/>
-        </main>
+    let items = create_rw_signal(cx, Vec::new());
+    items.set(vec![1.to_string(), 2.to_string()]);
+    // let on_click = move |_| {
+    //     let nos = items.get().len() as u32;
+    //     items.update(|x| x.push(nos.to_string()));
+    // };
+    let ul_list = move || {
+        items
+            .get()
+            .into_iter()
+            .map(|x| view! {cx, <li>{x}</li>})
+            .collect_view(cx);
+    };
+    let list = move || {
+        view! {
+            cx,
+            // <button on:click=on_click >"INC"</button>
+            <ul>{ul_list}</ul>
+        }
+    };
+    view! { cx,
+        <TakesChildren>
+            <ul>{ul_list}</ul>
+        </TakesChildren>
     }
 }
 
-/// Button A receives a signal setter and updates the signal itself
 #[component]
-pub fn ButtonA(
-    cx: Scope,
-    /// Signal that will be toggled when the button is clicked.
-    setter: WriteSignal<bool>,
-) -> impl IntoView {
-    view! {
-        cx,
-        <button
-            on:click=move |_| setter.update(|value| *value = !*value)
-        >
-            "Toggle Red"
-        </button>
-    }
-}
-
-/// Button B receives a closure
-#[component]
-pub fn ButtonB<F>(
-    cx: Scope,
-    /// Callback that will be invoked when the button is clicked.
-    on_click: F,
-) -> impl IntoView
-where
-    F: Fn(MouseEvent) + 'static,
-{
-    view! {
-        cx,
-        <button
-            on:click=on_click
-        >
-            "Toggle Right"
-        </button>
-    }
-
-    // just a note: in an ordinary function ButtonB could take on_click: impl Fn(MouseEvent) + 'static
-    // and save you from typing out the generic
-    // the component macro actually expands to define a
-    //
-    // struct ButtonBProps<F> where F: Fn(MouseEvent) + 'static {
-    //   on_click: F
-    // }
-    //
-    // this is what allows us to have named props in our component invocation,
-    // instead of an ordered list of function arguments
-    // if Rust ever had named function arguments we could drop this requirement
-}
-
-/// Button C is a dummy: it renders a button but doesn't handle
-/// its click. Instead, the parent component adds an event listener.
-#[component]
-pub fn ButtonC(cx: Scope) -> impl IntoView {
-    view! {
-        cx,
-        <button>
-            "Toggle Italics"
-        </button>
-    }
-}
-
-/// Button D is very similar to Button A, but instead of passing the setter as a prop
-/// we get it from the context
-#[component]
-pub fn ButtonD(cx: Scope) -> impl IntoView {
-    let setter = use_context::<SmallcapsContext>(cx).unwrap().0;
-
-    view! {
-        cx,
-        <button
-            on:click=move |_| setter.update(|value| *value = !*value)
-        >
-            "Toggle Small Caps"
-        </button>
+pub fn TakesChildren(cx: Scope, children: Children) -> impl IntoView {
+    view! { cx,
+        <h2>"Children"</h2>
+        {children(cx)}
     }
 }
 
