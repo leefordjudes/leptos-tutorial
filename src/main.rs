@@ -30,6 +30,7 @@ pub fn App(cx: Scope) -> impl IntoView {
         sum = numbers.with(|x| x.iter().fold(0, |s, y| s + y));
         view! {cx,<p>{sum}</p>}.into_view(cx)
     };
+    let view_sum = move || sum;
     view! { cx,
         <TakesChildrenFnOnce>
         {children_fn_once()}
@@ -41,8 +42,12 @@ pub fn App(cx: Scope) -> impl IntoView {
         </TakesChildrenFn>
         <hr/>
         <TakesChildrenFnMut>
-        {total()}
+            {total()}
         </TakesChildrenFnMut>
+        <WrapsChildren>
+        <p>"Here's a child."</p>
+        <p>"Here's another child."</p>
+    </WrapsChildren>
     }
 }
 
@@ -67,6 +72,26 @@ pub fn TakesChildrenFnMut(cx: Scope, mut children: ChildrenFnMut) -> impl IntoVi
     view! { cx,
         <h2>"Takes Children FnMut"</h2>
         {children(cx)}
+    }
+}
+
+/// Wraps each child in an `<li>` and embeds them in a `<ul>`.
+#[component]
+pub fn WrapsChildren(cx: Scope, children: Children) -> impl IntoView {
+    // children(cx) returns a `Fragment`, which has a
+    // `nodes` field that contains a Vec<View>
+    // this means we can iterate over the children
+    // to create something new!
+    let children = children(cx)
+        .nodes
+        .into_iter()
+        .map(|child| view! { cx, <li>{child}</li> })
+        .collect::<Vec<_>>();
+
+    view! { cx,
+        <h1><code>"<WrapsChildren/>"</code></h1>
+        // wrap our wrapped children in a UL
+        <ul>{children}</ul>
     }
 }
 
